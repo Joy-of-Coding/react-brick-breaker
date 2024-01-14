@@ -2,7 +2,9 @@ import Board from './Board.jsx'
 
 function App() {
 
-    return <Board />
+    return (
+        <Board />
+    )
 }
 
 export default App

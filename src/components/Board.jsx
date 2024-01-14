@@ -1,10 +1,8 @@
 import { useRef, useEffect, useState } from 'react'
-import jQuery from 'jquery';
 
 const Board = props => {
   // Board properties
   const canvasRef = useRef(null)
-  const initialized = useRef(false);  // board initialized status
   const boardWidth = useRef(500);
   const boardHeight = useRef(300);
   const canvasMinX = useRef(0); // minimum canvas x bounds
@@ -42,11 +40,11 @@ const Board = props => {
 
   useEffect(() => {
     const canvas = canvasRef.current
-    const canvasCTX = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d')
     
-    init(canvasCTX);
+    init();
 
-    function init(ctx) {
+    function init() {
       // Set the height and width of the board
       ctx.canvas.width = boardWidth.current;
       ctx.canvas.height = boardHeight.current;
@@ -63,16 +61,16 @@ const Board = props => {
       // Initialize and draw the paddle
       // console.log("boardWidth=", boardWidth.current, "/2=", boardWidth.current / 2);
       // console.log("paddleWidth=", paddleWidth.current, "/2=", paddleWidth.current / 2);
-      window.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mousemove", onMouseMove);
 
       // run draw function every 10 milliseconds to give
       // the illusion of movement
-      startAnimation(ctx);
+      startAnimation();
     }
 
     // initialize array of bricks to be visible (true)
     function initBricks() {
-      console.log("boardWidth=", boardWidth.current, "ncols=", ncols.current);
+      //console.log("boardWidth=", boardWidth.current, "ncols=", ncols.current);
       brickWidth.current = boardWidth.current / ncols.current - 1;
       let i = 0;
       let j = 0;
@@ -101,7 +99,7 @@ const Board = props => {
 
     
     // used to draw the ball
-    function circle(ctx, x, y, r) {
+    function circle(x, y, r) {
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2, true);
       ctx.closePath();
@@ -109,8 +107,8 @@ const Board = props => {
     }
 
     // used to draw each brick & the paddle
-    function rect(ctx, x, y, w, h) {
-      console.log("rect: x=",x,"y=",y,"w=",w,"h=",h);
+    function rect(x, y, w, h) {
+      //console.log("rect: x=",x,"y=",y,"w=",w,"h=",h);
       ctx.beginPath();
       ctx.rect(x, y, w, h);
       ctx.closePath();
@@ -118,15 +116,15 @@ const Board = props => {
     }
 
     // clear the screen in between drawing each animation
-    function clear(ctx) {
+    function clear() {
       ctx.clearRect(0, 0, boardWidth.current, boardHeight.current);
-      rect(ctx, 0, 0, boardWidth.current, boardHeight.current);
+      rect(0, 0, boardWidth.current, boardHeight.current);
     }
 
-    function pause(ctx) {
+    function pause() {
       if (paused) {
         // if paused, begin animation again
-        startAnimation(ctx);
+        startAnimation();
       } else {
         // if unpaused, clear the animation
         stopAnimation();
@@ -146,7 +144,7 @@ const Board = props => {
     }
 
     // render the bricks
-    function drawBricks(ctx) {
+    function drawBricks() {
       let i = 0;
       let j = 0;
       for (i = 0; i < nrows.current; i++) {
@@ -160,7 +158,6 @@ const Board = props => {
           ctx.fillStyle = brickColors.current[(i + j) % brickColors.current.length];
           if (bricks.current[i][j]) {
             rect(
-              ctx,
               j * (brickWidth.current + brickPadding.current) + brickPadding.current,
               i * (brickHeight.current + brickPadding.current) + brickPadding.current,
               brickWidth.current,
@@ -171,62 +168,64 @@ const Board = props => {
       }
     }
 
-    function drawPaddle(ctx) {
+    function drawPaddle() {
       setPaddleX((boardWidth.current / 2) - (paddleWidth.current / 2));
       ctx.fillStyle = paddleColor.current;
-      rect(ctx, paddleX, boardHeight.current - paddleHeight.current, paddleWidth.current, paddleHeight.current);
+      rect(paddleX, boardHeight.current - paddleHeight.current, paddleWidth.current, paddleHeight.current);
     }
 
-    function drawBall(ctx) {
+    function drawBall() {
       ctx.fillStyle = ballColor.current;
-      circle(ctx, ballX.current, ballY.current, ballRadius.current);
+      circle(ballX.current, ballY.current, ballRadius.current);
     }
 
-    function draw(ctx) {
+    function draw() {
       // Reset the 
       ctx.fillStyle = backcolor.current;
-      clear(ctx);
+      clear();
 
       // Draw board components
-      drawBricks(ctx);
-      drawPaddle(ctx);
-      drawBall(ctx);
+      drawBricks();
+      drawPaddle();
+      drawBall();
 
-      // //check if we have hit a brick
-      // rowheight.current = brickHeight.current + padding.current;
-      // colwidth.current = brickWidth.current + padding.current;
-      // row.current = Math.floor(y.current / rowheight.current);
-      // col.current = Math.floor(x.current / colwidth.current);
-      // //if so reverse the ball and mark the brick as broken
-      // if (y.current < nrows.current * rowheight.current && row.current >= 0 && col.current >= 0 && bricks[row.current][col.current].current) {
-      //   dy.current = -dy.current;
-      //   bricks[row.current][col.current].current = false;
-      //   setScore(score + 1);
-      //   update_score_text();
-      // }
+      //check if we have hit a brick
+      let rowheight = brickHeight.current + brickPadding.current;
+      let colwidth = brickWidth.current + brickPadding.current;
+      let row = Math.floor(ballY.current / rowheight.current);
+      let col = Math.floor(ballX.current / colwidth.current);
+      //if so reverse the ball and mark the brick as broken
+      if (ballY.current < nrows.current * rowheight && row >= 0 && col >= 0 && bricks.current[row][col]) {
+        ballDY.current = -ballDY.current;
+        bricks.current[row][col] = false;
+        setScore(score + 1);
+        //update_score_text();
+      }
     
-      // //contain the ball by rebouding it off the walls of the canvas
-      // if (x.current + dx.current > width.current || x.current + dx.current < 0) dx.current = -dx.current;
+      //contain the ball by rebouding it off the walls of the canvas
+      if (ballX.current + ballDX.current > boardWidth.current || ballX.current + ballDX.current < 0)
+        ballDX.current = -ballDX.current;
     
-      // if (y.current + dy.current < 0) {
-      //   dy.current = -dy.current;
-      // } else if (y.current + dy.current > height.current - paddleh.current) {
-      //   // check if the ball is hitting the
-      //   // paddle and if it is rebound it
-      //   if (x.current > paddlex && x.current < paddlex + paddlew) {
-      //     dy = -dy;
-      //   }
-      // }
-      // if (y + dy > height) {
-      //   //game over, so stop the animation
-      //   stop_animation();
-      // }
-      // x += dx;
-      // y += dy;
+      if (ballY.current + ballDY.current < 0) {
+        ballDY.current = -ballDY.current;
+      } else if (ballY.current + ballDY.current > boardHeight.current - paddleHeight.current) {
+        // check if the ball is hitting the
+        // paddle and if it is rebound it
+        if (ballX.current > paddleX && ballX.current < paddleX + paddleWidth) {
+          ballDY.current = -ballDY.current;
+        }
+      }
+
+      if (ballY.current + ballDY.current > boardHeight) {
+        //game over, so stop the animation
+        stopAnimation();
+      }
+      ballX.current += ballDX.current;
+      ballY.current += ballDY.current;
     }
     
-    function startAnimation(ctx) {
-      intervalId.current = setInterval(draw(ctx), 10);
+    function startAnimation() {
+      intervalId.current = setInterval(draw(), 10);
     }
     
     function stopAnimation() {
