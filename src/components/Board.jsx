@@ -22,6 +22,7 @@ const Board = props => {
   const ballColor = useRef("black");
 
   // Paddle properties
+  const paddleX = useRef(0);
   const paddleHeight = useRef(10); // paddle height (pixels)
   const paddleWidth = useRef(75); // paddle width (pixels)
   const paddleColor = useRef("black");
@@ -34,17 +35,13 @@ const Board = props => {
 
   const intervalId = useRef(0); // track refresh rate for calling draw()
 
-  // useState variables
-  //const [score, setScore] = useState(0); // store the number of bricks eliminated
-  //const [paused, setPaused] = useState(false); // keeps track of whether the game is paused (true) or not (false)
-  //const [paddleX, setPaddleX] = useState((boardWidth.current / 2) - (paddleWidth.current / 2));
-  const paddleX = useRef(0);
   const paused = useRef(false);
   const score = useRef(0);
 
   const canvas = useRef(null);
   const ctx = useRef(null);
 
+  // Grab the canvas once it has been mounted in the DOM
   useEffect(() => {
     canvas.current = canvasRef.current;
     ctx.current = canvas.current.getContext('2d');
@@ -56,6 +53,32 @@ const Board = props => {
       initialized.current = true;
     }
   })
+
+  function init() {
+    // Set the height and width of the board
+    ctx.current.canvas.width = boardWidth.current;
+    ctx.current.canvas.height = boardHeight.current;
+
+    // Initialize the board
+    ctx.current.fillStyle = 'grey';
+    ctx.current.fillRect(0, 0, ctx.current.canvas.width, ctx.current.canvas.height);
+    canvasMinX.current = document.getElementById('canvas').getBoundingClientRect().left;
+    canvasMaxX.current = canvasMinX.current + boardWidth.current;
+
+    // Initialize the brick states
+    initBricks();
+
+    // Initialize the paddle position and register the mouse move event handler
+    paddleX.current = (boardWidth.current / 2) - (paddleWidth.current / 2);
+    document.addEventListener("mousemove", onMouseMove);
+
+    // Register the keypress event handler
+    document.addEventListener("keypress", onKeyPress);
+
+    // run draw function every 10 milliseconds to give
+    // the illusion of movement
+    startAnimation();
+  }
 
   // initialize array of bricks to be visible (true)
   function initBricks() {
@@ -77,6 +100,7 @@ const Board = props => {
   }
 
   function reload() {
+    stopAnimation();      // stop animation in case it's currently running
     ballX.current = 200;  // starting horizontal position of ball
     ballY.current = 150;  // starting vertical position of ball
     ballDX.current = 1;   // amount ball should move horizontally
@@ -218,7 +242,7 @@ const Board = props => {
   
   function startAnimation() {
     console.log("animation started");
-    intervalId.current = setInterval(draw, 100);
+    intervalId.current = setInterval(draw, 10);
   }
   
   function stopAnimation() {
@@ -251,32 +275,6 @@ function pause() {
       XPos = Math.min(boardWidth.current - paddleWidth.current, XPos);
       paddleX.current = XPos;
     }
-  }
-
-  function init() {
-    // Set the height and width of the board
-    ctx.current.canvas.width = boardWidth.current;
-    ctx.current.canvas.height = boardHeight.current;
-
-    // Initialize the board
-    ctx.current.fillStyle =  '#D3D3D3'
-    ctx.current.fillRect(0, 0, ctx.current.canvas.width, ctx.current.canvas.height)
-    canvasMinX.current = document.getElementById('canvas').getBoundingClientRect().left;
-    canvasMaxX.current = canvasMinX.current + boardWidth.current;
-
-    // Initialize and draw the bricks
-    initBricks();
-
-    // Initialize the paddle position and register the mouse move event handler
-    paddleX.current = (boardWidth.current / 2) - (paddleWidth.current / 2);
-    document.addEventListener("mousemove", onMouseMove);
-
-    // Register the keypress event handler
-    document.addEventListener("keypress", onKeyPress);
-
-    // run draw function every 10 milliseconds to give
-    // the illusion of movement
-    startAnimation();
   }
 
   return (
