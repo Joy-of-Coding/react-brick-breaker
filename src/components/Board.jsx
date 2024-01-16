@@ -34,8 +34,6 @@ const Board = props => {
 
   const intervalId = useRef(0); // track refresh rate for calling draw()
 
-  const myCount = useRef(0);
-  
   // useState variables
   //const [score, setScore] = useState(0); // store the number of bricks eliminated
   //const [paused, setPaused] = useState(false); // keeps track of whether the game is paused (true) or not (false)
@@ -51,8 +49,12 @@ const Board = props => {
     canvas.current = canvasRef.current;
     ctx.current = canvas.current.getContext('2d');
 
-    if (!initialized.current)
+    if (!initialized.current) {
       init();
+
+      // Set initialized to true
+      initialized.current = true;
+    }
   })
 
   // initialize array of bricks to be visible (true)
@@ -75,12 +77,12 @@ const Board = props => {
   }
 
   function reload() {
-    ballX.current = 200; // starting horizontal position of ball
-    ballY.current = 150; // starting vertical position of ball
-    ballDX.current = 1; // amount ball should move horizontally
-    ballDY.current = -3; // amount ball should move vertically
-    score.current = 0; // reset the score on reload
-    init(); // start the game again!
+    ballX.current = 200;  // starting horizontal position of ball
+    ballY.current = 150;  // starting vertical position of ball
+    ballDX.current = 1;   // amount ball should move horizontally
+    ballDY.current = -3;  // amount ball should move vertically
+    score.current = 0;    // reset the score on reload
+    init();               // start the game again!
   }
   
   // used to draw the ball
@@ -141,9 +143,7 @@ const Board = props => {
     return dtStr;
   }
 
-
   function drawPaddle() {
-    //console.log(getTimeStr(), "drawPaddle: paddleX=", paddleX.current);
     ctx.current.fillStyle = paddleColor.current;
     rect(paddleX.current, boardHeight.current - paddleHeight.current, paddleWidth.current, paddleHeight.current);
   }
@@ -176,19 +176,18 @@ const Board = props => {
     } else if (ballY.current + ballDY.current > boardHeight.current - paddleHeight.current) {
       // check if the ball is hitting the
       // paddle and if it is rebound it
-      if (ballX.current > paddleX.current && ballX.current < paddleX.current + paddleWidth) {
+      if (ballX.current > paddleX.current && ballX.current < paddleX.current + paddleWidth.current) {
         ballDY.current = -ballDY.current;
       }
     }
 
-    //console.log("Y=", ballY.current, ",DY=", ballDY.current, ",boardHeight=", boardHeight.current);
-    if (ballY.current + ballDY.current > boardHeight) {
-      //game over, so stop the animation
+    // Did the paddle miss the ball? Game over, so stop the animation
+    if (ballY.current + ballDY.current > boardHeight.current) {
+      console.log(getTimeStr() + " stopping animation");
       stopAnimation();
     }
 
     // Move the ball
-    //console.log("draw: X=", ballX.current, ",Y=", ballY.current, ",DX=", ballDX.current, ",DY=", ballDY.current);
     ballX.current += ballDX.current;
     ballY.current += ballDY.current;
   }
@@ -199,7 +198,7 @@ const Board = props => {
     // Put <div id="score"></div> in
     // your HTML for this text to display
     const scoreElement = document.getElementById("score");
-    scoreElement.text = "Score: " + score.current;
+    scoreElement.innerText = "Score: " + score.current;
   }
   
   function draw() {
@@ -218,10 +217,12 @@ const Board = props => {
   }
   
   function startAnimation() {
-    intervalId.current = setInterval(draw, 10);
+    console.log("animation started");
+    intervalId.current = setInterval(draw, 100);
   }
   
   function stopAnimation() {
+    console.log("animation stopped for intervalId=", intervalId.current);
     clearInterval(intervalId.current);
   }
 
@@ -245,15 +246,10 @@ function pause() {
   function onMouseMove(evt) {
     // set the paddle position if the mouse position
     // is within the borders of the canvas
-    //console.log("onMouseMove: evt.pageX=", evt.pageX, ",canvaseMinX=",canvasMinX.current, "canvasMaxX=", canvasMaxX.current);
     if (evt.pageX > canvasMinX.current && evt.pageX < canvasMaxX.current) {
       let XPos = Math.max(evt.pageX - canvasMinX.current - paddleWidth.current / 2, 0);
       XPos = Math.min(boardWidth.current - paddleWidth.current, XPos);
-      //console.log("setPaddleX(XPos)=", XPos);
-      // myCount.current += 1;
-      // console.log("myCount=", myCount.current);
       paddleX.current = XPos;
-      //setPaddleX(XPos);
     }
   }
 
@@ -271,16 +267,16 @@ function pause() {
     // Initialize and draw the bricks
     initBricks();
 
-    // Initialize the paddle position
+    // Initialize the paddle position and register the mouse move event handler
     paddleX.current = (boardWidth.current / 2) - (paddleWidth.current / 2);
     document.addEventListener("mousemove", onMouseMove);
+
+    // Register the keypress event handler
+    document.addEventListener("keypress", onKeyPress);
 
     // run draw function every 10 milliseconds to give
     // the illusion of movement
     startAnimation();
-
-    // Set initialized to true
-    initialized.current = true;
   }
 
   return (
@@ -290,7 +286,7 @@ function pause() {
         <p>Mouse moves platform &bull; Press any key to pause</p>
         <p></p>
         <button onClick={reload}>Play again!</button>
-        <div id="score"></div>
+        <div id="score">Score: 0</div>
       </center>
     </>
   )
