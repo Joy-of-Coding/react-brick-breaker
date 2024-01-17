@@ -46,6 +46,7 @@ const Board = props => {
     canvas.current = canvasRef.current;
     ctx.current = canvas.current.getContext('2d');
 
+    console.log(getTimeStr() + " useEffect: initialized=", initialized.current);
     if (!initialized.current) {
       init();
 
@@ -60,9 +61,9 @@ const Board = props => {
     ctx.current.canvas.height = boardHeight.current;
 
     // Initialize the board
-    ctx.current.fillStyle = 'grey';
+    ctx.current.fillStyle = "grey";
     ctx.current.fillRect(0, 0, ctx.current.canvas.width, ctx.current.canvas.height);
-    canvasMinX.current = document.getElementById('canvas').getBoundingClientRect().left;
+    canvasMinX.current = document.getElementById("canvas").getBoundingClientRect().left;
     canvasMaxX.current = canvasMinX.current + boardWidth.current;
 
     // Initialize the brick states
@@ -77,12 +78,12 @@ const Board = props => {
 
     // run draw function every 10 milliseconds to give
     // the illusion of movement
+    console.log(getTimeStr() + " init: starting animation");
     startAnimation();
   }
 
   // initialize array of bricks to be visible (true)
   function initBricks() {
-    //console.log("boardWidth=", boardWidth.current, "ncols=", ncols.current);
     brickWidth.current = boardWidth.current / ncols.current - 1;
     let i = 0;
     let j = 0;
@@ -100,13 +101,15 @@ const Board = props => {
   }
 
   function reload() {
+    console.log(getTimeStr() + " calling reload");
     stopAnimation();      // stop animation in case it's currently running
     ballX.current = 200;  // starting horizontal position of ball
     ballY.current = 150;  // starting vertical position of ball
     ballDX.current = 1;   // amount ball should move horizontally
     ballDY.current = -3;  // amount ball should move vertically
     score.current = 0;    // reset the score on reload
-    init();               // start the game again!
+    initBricks();         // re-initialize the brick states
+    startAnimation();     // restart the animation
   }
   
   // used to draw the ball
@@ -119,7 +122,6 @@ const Board = props => {
 
   // used to draw each brick & the paddle
   function rect(x, y, w, h) {
-    //console.log("rect: x=",x,"y=",y,"w=",w,"h=",h);
     ctx.current.beginPath();
     ctx.current.rect(x, y, w, h);
     ctx.current.closePath();
@@ -127,7 +129,7 @@ const Board = props => {
   }
 
   // clear the screen in between drawing each animation
-  function clear() {
+  function clearBoard() {
     ctx.current.clearRect(0, 0, boardWidth.current, boardHeight.current);
     rect(0, 0, boardWidth.current, boardHeight.current);
   }
@@ -158,11 +160,13 @@ const Board = props => {
   }
 
   function getTimeStr() {
+    const zeroPad = (num, places) => String(num).padStart(places, '0');
+
     var currentdate = new Date(); 
-    var dtStr = currentdate.getHours() + ":"  
-              + currentdate.getMinutes() + ":" 
-              + currentdate.getSeconds() + "."
-              + currentdate.getMilliseconds();
+    var dtStr = zeroPad(currentdate.getHours(), 2) + ":"  
+              + zeroPad(currentdate.getMinutes(), 2) + ":" 
+              + zeroPad(currentdate.getSeconds(), 2) + "."
+              + zeroPad(currentdate.getMilliseconds(), 3);
 
     return dtStr;
   }
@@ -226,10 +230,9 @@ const Board = props => {
   }
   
   function draw() {
-    //console.log("draw: paddleX=", paddleX);
     // Reset the board
     ctx.current.fillStyle = backcolor.current;
-    clear();
+    clearBoard();
 
     // Draw board components
     drawBricks();
@@ -241,27 +244,40 @@ const Board = props => {
   }
   
   function startAnimation() {
-    console.log("animation started");
-    intervalId.current = setInterval(draw, 10);
+    // Only start animation if the intervalId is zero
+    if (intervalId.current == 0) {
+      intervalId.current = setInterval(draw, 100);
+      console.log(getTimeStr() + " animation started with intervalId=", intervalId.current);
+    } else {
+      console.log(getTimeStr() + " Animation currently running; intervalId=", intervalId.current);
+    }
   }
   
   function stopAnimation() {
-    console.log("animation stopped for intervalId=", intervalId.current);
-    clearInterval(intervalId.current);
+    if (intervalId.current != 0) {
+      console.log(getTimeStr() + " stopping animation intervalId=", intervalId.current);
+      clearInterval(intervalId.current);
+      intervalId.current = 0;
+    } else {
+      console.log(getTimeStr() + " Attempting animation stop intervalId=0");
+    }
   }
 
-function pause() {
+  function pause() {
     if (paused.current) {
       // if paused, begin animation again
+      console.log(getTimeStr() + " pause: starting animation");
       startAnimation();
     } else {
       // if unpaused, clear the animation
+      console.log(getTimeStr() + " pause: stopping animation");
       stopAnimation();
     }
     paused.current = !paused.current;
   }
 
   function onKeyPress(evt) {
+    console.log(getTimeStr() + " onKeyPress: key pressed");
     evt.preventDefault();
     pause();
   }
