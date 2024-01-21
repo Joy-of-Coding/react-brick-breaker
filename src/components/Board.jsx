@@ -246,7 +246,7 @@ const Board = props => {
   function startAnimation() {
     // Only start animation if the intervalId is zero
     if (intervalId.current == 0) {
-      intervalId.current = setInterval(draw, 100);
+      intervalId.current = setInterval(draw, 1000/60);
       console.log(getTimeStr() + " animation started with intervalId=", intervalId.current);
     } else {
       console.log(getTimeStr() + " Animation currently running; intervalId=", intervalId.current);
